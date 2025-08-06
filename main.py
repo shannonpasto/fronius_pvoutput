@@ -21,6 +21,24 @@ def getData(url):
         print(f"JSON decode error: {json_err}")
 
 
+req_attr = [
+    ("inverter_addr", cfg.inverter_addr),
+    ("pvo_sid", cfg.pvo_sid),
+    ("pvo_api_key", cfg.pvo_api_key)
+]
+
+missing_attr = []
+for name, value in req_attr:
+    if not value:
+        missing_attr.append(name)
+
+if len(missing_attr) > 0:
+    print("\nThe following options are not set in the config file\nPlease set them and try again\n",
+          *missing_attr,
+          sep='\n')
+    print()
+    exit(1)
+
 inverterRealtimeData = getData(f"http://{cfg.inverter_addr}/solar_api/v1/GetInverterRealtimeData.cgi?Scope=Device&DataCollection=CommonInverterData")
 powerFlowRealTimeData = getData(f"http://{cfg.inverter_addr}/solar_api/v1/GetPowerFlowRealtimeData.fcgi")
 
