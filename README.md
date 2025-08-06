@@ -23,6 +23,5 @@ No output will be returned if everything works. Next step would be to configure 
 
 ---
 #### To-do
-- check that all 3 options are configured
 - better logging
 - see if v1 (Energy Generation) can be used
