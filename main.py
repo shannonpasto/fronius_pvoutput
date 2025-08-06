@@ -24,7 +24,6 @@ def getData(url):
 inverterRealtimeData = getData(f"http://{cfg.inverter_addr}/solar_api/v1/GetInverterRealtimeData.cgi?Scope=Device&DataCollection=CommonInverterData")
 powerFlowRealTimeData = getData(f"http://{cfg.inverter_addr}/solar_api/v1/GetPowerFlowRealtimeData.fcgi")
 
-cumulative_energy_generation = inverterRealtimeData["Body"]["Data"]["TOTAL_ENERGY"]["Value"]  # v1 c1=1
 power_generation = powerFlowRealTimeData["Body"]["Data"]["Site"]["P_PV"]  # v2
 power_consumption = -powerFlowRealTimeData["Body"]["Data"]["Site"]["P_Load"]  # v4
 voltage = inverterRealtimeData["Body"]["Data"]["UAC"]["Value"]  # v6
