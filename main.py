@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import requests
+import sys
 from urllib.parse import urlencode
 from datetime import datetime
 import config as cfg
@@ -8,7 +9,7 @@ import config as cfg
 pvo_url = "https://pvoutput.org/service/r2/addstatus.jsp"
 
 
-def getData(url):
+def get_data(url):
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
@@ -19,6 +20,24 @@ def getData(url):
         print(f"Request error occurred: {req_err}")
     except ValueError as json_err:
         print(f"JSON decode error: {json_err}")
+
+
+def get_num(data, path):
+    try:
+        for key in path:
+            data = data[key]
+    except (KeyError, TypeError) as e:
+        print(f"Error retrieving {'.'.join(path)}: {e}")
+        sys.exit(1)  # stop script
+
+    if data is None:
+        print(f"Value at {'.'.join(path)} is None")
+        sys.exit(1)
+
+    if isinstance(data, (int, float)):
+        if isinstance(data, float) and data.is_integer():
+            return int(data)
+        return data
 
 
 req_attr = [
@@ -33,18 +52,41 @@ for name, value in req_attr:
         missing_attr.append(name)
 
 if len(missing_attr) > 0:
-    print("\nThe following options are not set in the config file\nPlease set them and try again\n",
-          *missing_attr,
-          sep='\n')
+    print(
+        "\nThe following options are not set in the config file\n"
+        "Please set them and try again\n",
+        *missing_attr,
+        sep='\n'
+    )
     print()
-    exit(1)
+    sys.exit(1)
 
-inverterRealtimeData = getData(f"http://{cfg.inverter_addr}/solar_api/v1/GetInverterRealtimeData.cgi?Scope=Device&DataCollection=CommonInverterData")
-powerFlowRealTimeData = getData(f"http://{cfg.inverter_addr}/solar_api/v1/GetPowerFlowRealtimeData.fcgi")
+interter_realtime_data = get_data(
+    f"http://{cfg.inverter_addr}/solar_api/v1/"
+    "GetInverterRealtimeData.cgi?Scope=Device&DataCollection=CommonInverterData"
+)
 
-power_generation = powerFlowRealTimeData["Body"]["Data"]["Site"]["P_PV"]  # v2
-power_consumption = -powerFlowRealTimeData["Body"]["Data"]["Site"]["P_Load"]  # v4
-voltage = inverterRealtimeData["Body"]["Data"]["UAC"]["Value"]  # v6
+power_flow_realtime_data = get_data(
+    f"http://{cfg.inverter_addr}/solar_api/v1/GetPowerFlowRealtimeData.fcgi"
+)
+
+# v2
+power_generation = get_num(
+    power_flow_realtime_data,
+    ["Body", "Data", "Site", "P_PV"]
+)
+
+# v4
+power_consumption = -get_num(
+    power_flow_realtime_data,
+    ["Body", "Data", "Site", "P_Load"]
+)
+
+# v6
+voltage = get_num(
+    interter_realtime_data,
+    ["Body", "Data", "UAC", "Value"]
+)
 
 params = {
     "d": datetime.today().strftime('%Y%m%d'),
@@ -68,4 +110,6 @@ try:
 except requests.exceptions.HTTPError as http_err:
     print(f"HTTP error occurred: {http_err}")
 except requests.exceptions.RequestException as req_err:
-    print(f"Request error occurred: {req_err}.\n\n{pvo_url}?{urlencode(params)}")
+    print(f"Request error occurred: {req_err}.\n\n{pvo_url}?"
+        "{urlencode(params)}"
+    )
