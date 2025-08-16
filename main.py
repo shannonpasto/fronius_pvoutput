@@ -14,9 +14,16 @@ import config as cfg
 PVO_BASE_URL = "https://pvoutput.org"
 
 # set up cli args
-parser = argparse.ArgumentParser()
-parser.add_argument("-d", "--dry-run", action="store_true",
-                    help="Run in dry-run mode")
+parser = argparse.ArgumentParser(
+    description="Upload Fronius inverter and smart meter data to PVOutput, "
+                "with optional CSV logging and dry-run mode. "
+                "Refer to https://github.com/shannonpasto/fronius_pvoutput"
+)
+parser.add_argument("-d", "--dry-run",
+                    action="store_true",
+                    help="Do not send data to PVOutput. Instead, print what would be sent "
+                        "and make GET requests visible."
+)
 args = parser.parse_args()
 if args.dry_run:
     print("[DRY RUN] Starting dry run")
