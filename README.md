@@ -10,8 +10,11 @@ For best results a python [virtual environment](https://docs.python.org/3/librar
    - `pvo_sid` - your PVOutput system id
    - `pvo_api_key` - your PVOutput API key
    - `timezone` - (optional). Add your timezone. Use [List of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) to find yours. If not set the timezone will be determined from either the inverter or local system. PVOutput requires that timestamps are your local timezone
+   - `write_csv` - (optional). set this to `True` to always write the data to a csv for import into PVOutput
+   - `csv_path` - (optional). path to save the csv file to. Defaults to the same locaiton as `main.py`.
 3. install the requirements `pip3 install -r requirements.txt`
-4. run the script `python3 ./main.py`
+4. do a dry run to make sure everything works `python3 ./main.py --dry-run`. Fix any errors before proceeding
+5. run the script `python3 ./main.py`
 
 No output will be returned if everything works. Next step would be to configure cron
 1. `crontab -e`
