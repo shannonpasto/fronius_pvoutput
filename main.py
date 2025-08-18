@@ -128,14 +128,39 @@ power_flow_realtime_data = get_data(
 if power_flow_realtime_data is None:
     sys.exit(1)
 
+meter_realtime_data = get_data(
+    f"http://{cfg.inverter_addr}/solar_api/v1/GetMeterRealtimeData.cgi?Scope=System"
+)
+if meter_realtime_data is None:
+    sys.exit(1)
+
 # get the required values from the inverter and smart meter
 # https://pvoutput.org/help/api_specification.html#add-status-service
+
+# v1 - Energy Generation
+energy_generation = int(round(get_num(
+    inverter_realtime_data,
+    ["Body", "Data", "TOTAL_ENERGY", "Value"]
+)))
 
 # v2 - Power Generation
 power_generation = int(round(get_num(
     power_flow_realtime_data,
     ["Body", "Data", "Site", "P_PV"]
 )))
+
+# v3 - Energy Consumption
+grid_import = int(round(get_num(
+    meter_realtime_data,
+    ["Body", "Data", "0", "EnergyReal_WAC_Sum_Consumed"]
+)))
+
+grid_export = int(round(get_num(
+    meter_realtime_data,
+    ["Body", "Data", "0", "EnergyReal_WAC_Sum_Produced"]
+)))
+
+energy_consumption = energy_generation + grid_import - grid_export
 
 # v4 - Power Consumption
 power_consumption = -int(round(get_num(
@@ -171,13 +196,15 @@ d = dt.strftime("%Y%m%d")
 t = dt.strftime("%H:%M")
 
 # set the URL parameters
-# c1=2 as v1 is total energy, ie cumulative value
 params = {
     "d": d,
     "t": t,
+    "v1": energy_generation,
     "v2": power_generation,
+    "v3": energy_consumption,
     "v4": power_consumption,
-    "v6": voltage
+    "v6": voltage,
+    "c1": 1
 }
 
 if cfg.write_csv:
