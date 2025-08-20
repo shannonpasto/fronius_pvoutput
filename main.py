@@ -21,12 +21,9 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("-d", "--dry-run",
                     action="store_true",
-                    help="Do not send data to PVOutput. Instead, print what would be sent "
-                        "and make GET requests visible."
+                    help="Do not send data to PVOutput. Instead, print what"
+                        "would be sent and make GET requests visible."
 )
-args = parser.parse_args()
-if args.dry_run:
-    print("[DRY RUN] Starting dry run")
 
 
 def get_data(url):
@@ -67,30 +64,50 @@ def get_num(data, path):
 
 
 def write_csv(date_str, data):
-    """Append one row to <date>.csv, creating file with header if missing.
-    Input is: date as a string, data as a list
-    Output is: write to csv"""
+    """Append one row to <date>.csv, creating file with header if missing."""
     csv_header = [
         "Time", "Energy Generation", "Power Generation", "Energy Consumption",
         "Power Consumption", "Temperature", "Voltage"
     ]
 
+    key_map = {
+        "t": "Time",
+        "v1": "Energy Generation",
+        "v2": "Power Generation",
+        "v3": "Energy Consumption",
+        "v4": "Power Consumption",
+        "v5": "Temperature",
+        "v6": "Voltage"
+    }
+
     if cfg.csv_path:
         csv_file = os.path.join(cfg.csv_path, f"{date_str}.csv")
         os.makedirs(os.path.dirname(csv_file), exist_ok=True)
     else:
-        csv_file = os.path.join(os.path.dirname(__file__), f"{date_str}.csv"
-        )
+        csv_file = os.path.join(os.path.dirname(__file__), f"{date_str}.csv")
 
     file_exists = os.path.isfile(csv_file)
     with open(csv_file, mode="a", newline="") as csvfile:
-        writer = csv.writer(csvfile)
+        writer = csv.DictWriter(csvfile, fieldnames=csv_header)
         if not file_exists:
-            writer.writerow(csv_header)
-        writer.writerow(data)
+            writer.writeheader()
+        output_row = {csv_col: data.get(k, "") for k, csv_col in key_map.items()}
+        writer.writerow(output_row)
+
+
+def _scrub_headers(h):
+    """Mask API key when printing/logging."""
+    k = h.get("X-Pvoutput-Apikey")
+    if k:
+        return {**h, "X-Pvoutput-Apikey": f"...{k[-4:]}"}
+    return h
 
 
 # start the script here
+args = parser.parse_args()
+if args.dry_run:
+    print("[DRY RUN] Starting dry run")
+
 # check for the required config options
 req_attr = [
     ("inverter_addr", cfg.inverter_addr),
@@ -158,20 +175,19 @@ dt = datetime.fromisoformat(inverter_timestamp)
 tz_name = getattr(cfg, "timezone", None) or tzlocal.get_localzone_name()
 site_tz = ZoneInfo(tz_name)
 
-timetstamp_converted = False
+timestamp_converted = False
 if dt.utcoffset() == timezone.utc.utcoffset(dt):
     dt = dt.astimezone(site_tz)
-    timetstamp_converted = True
+    timestamp_converted = True
 if args.dry_run:
     print("[DRY RUN] Timestamp:"
-          "converted UTC->local" if timetstamp_converted else "already local",
+          "converted UTC->local" if timestamp_converted else "already local",
           "final =", dt.isoformat()
     )
 d = dt.strftime("%Y%m%d")
 t = dt.strftime("%H:%M")
 
 # set the URL parameters
-# c1=2 as v1 is total energy, ie cumulative value
 params = {
     "d": d,
     "t": t,
@@ -180,11 +196,8 @@ params = {
     "v6": voltage
 }
 
-if cfg.write_csv:
-    write_csv(d, [
-        t, '', power_generation, '',
-        power_consumption, '', voltage
-    ])
+if cfg.write_csv and args.dry_run is False:
+    write_csv(d, params)
 
 headers = {
     'X-Pvoutput-Apikey': cfg.pvo_api_key,
@@ -193,12 +206,6 @@ headers = {
 
 # make the PVOutput POST
 if args.dry_run:
-    def _scrub_headers(h):
-        """Mask API key when printing/logging."""
-        k = h.get("X-Pvoutput-Apikey")
-        if k:
-          return {**h, "X-Pvoutput-Apikey": f"...{k[-4:]}"}
-        return h
     print("[DRY RUN] Would POST:")
     print("  URL: ", f"{PVO_BASE_URL}/service/r2/addstatus.jsp")
     print("  payload:", params)
@@ -216,16 +223,10 @@ else:
     except requests.exceptions.HTTPError as http_err:
         print(f"HTTP error occurred: {http_err}")
         if not cfg.write_csv:
-            write_csv(d, [
-                t, '', power_generation, '',
-                power_consumption, '', voltage
-            ])
+            write_csv(d, params)
     except requests.exceptions.RequestException as req_err:
         print(
             f"Request error occurred: {req_err}.\n\n"
             f"{PVO_BASE_URL}/service/r2/addstatus.jsp?{urlencode(params)}"
         )
-        write_csv(d, [
-                t, '', power_generation, '',
-                power_consumption, '', voltage
-            ])
+        write_csv(d, params)
