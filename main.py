@@ -229,4 +229,5 @@ else:
             f"Request error occurred: {req_err}.\n\n"
             f"{PVO_BASE_URL}/service/r2/addstatus.jsp?{urlencode(params)}"
         )
-        write_csv(d, params)
+        if not cfg.write_csv:
+            write_csv(d, params)
