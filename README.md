@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/github/license/shannonpasto/fronius_pvoutput)](./LICENSE)
-[![Last Commit](https://img.shields.io/github/last-commit/OWNER/REPO)](https://github.com/shannonpasto/fronius_pvoutput/commits/main)
+[![Last Commit](https://img.shields.io/github/last-commit/shannonpasto/fronius_pvoutput)](https://github.com/shannonpasto/fronius_pvoutput/commits/main)
 
 A python script to upload Fronius Gen24 Inverter (with smart meter) data to [PVOutput](https://pvoutput.org)
 
