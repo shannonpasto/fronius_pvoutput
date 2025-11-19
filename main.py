@@ -4,6 +4,7 @@ import argparse
 import csv
 import os
 import sys
+import time
 from urllib.parse import urlencode
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -22,8 +23,8 @@ parser = argparse.ArgumentParser(
 parser.add_argument("-d", "--dry-run",
                     action="store_true",
                     help="Do not send data to PVOutput. Instead, print what"
-                        "would be sent and make GET requests visible."
-)
+                    "would be sent and make GET requests visible."
+                    )
 
 
 def get_data(url):
@@ -148,17 +149,23 @@ if power_flow_realtime_data is None:
 # get the required values from the inverter and smart meter
 # https://pvoutput.org/help/api_specification.html#add-status-service
 
-# v2 - Power Generation
-power_generation = int(round(get_num(
-    power_flow_realtime_data,
-    ["Body", "Data", "Site", "P_PV"]
-)))
+while True:
+    # v2 - Power Generation
+    power_generation = int(round(get_num(
+        power_flow_realtime_data,
+        ["Body", "Data", "Site", "P_PV"]
+    )))
 
-# v4 - Power Consumption
-power_consumption = -int(round(get_num(
-    power_flow_realtime_data,
-    ["Body", "Data", "Site", "P_Load"]
-)))
+    # v4 - Power Consumption
+    power_consumption = -int(round(get_num(
+        power_flow_realtime_data,
+        ["Body", "Data", "Site", "P_Load"]
+    )))
+
+    if power_consumption >= 0:
+        break
+
+    time.sleep(1)
 
 # v6 - Voltage
 voltage = round(get_num(
