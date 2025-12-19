@@ -18,7 +18,7 @@ PVO_BASE_URL = "https://pvoutput.org"
 parser = argparse.ArgumentParser(
     description="Upload Fronius inverter and smart meter data to PVOutput, "
                 "with optional CSV logging and dry-run mode. "
-                "Refer to https://github.com/shannonpasto/fronius_pvoutput"
+                "Refer to https://github.com/gimmickyboot/fronius_pvoutput"
 )
 parser.add_argument("-d", "--dry-run",
                     action="store_true",
